@@ -1,0 +1,37 @@
+qsub: waiting for job 1973938.cyclades-master.stanford.edu to start
+qsub: job 1973938.cyclades-master.stanford.edu ready
+
+
+Each measurement is average per iteration. Runtime is given in milliseconds.
+MFLOPS is estimated assuming a naive matmul().
+
+ 0x80000032 = PAPI_TOT_INS      Instr completed
+ 0x8000003b = PAPI_TOT_CYC      Total cycles
+ 0x80000000 = PAPI_L1_DCM       L1D cache misses
+ 0x80000007 = PAPI_L2_TCM       L2 cache misses
+
+Dim.   MFLOPS     Runtime      0x80000032   0x8000003b   0x80000000   0x80000007
+
+   2  765.556      0.0000             133           49            0            0
+
+   4  761.106      0.0002             681          391            0            0
+
+   8  758.753      0.0013            4633         3135            0            0
+
+  16  755.337      0.0108           34713        25189            0            0
+
+  32  684.335      0.0958          269593       223390           26            0
+
+  64  576.891      0.9088         2126362      2119276        24230            0
+
+ 128  331.329     12.6590        16892960     29440718      2427178           20
+
+ 256  226.705    148.0093       134678639    343470008     24922350         2473
+
+ 512  140.976   1904.1190      1075581797   4432927769    267012885       153805
+
+1024   94.864  22637.4150      8597289699  52589556370   1806351069    562840202
+
+2048  --- Measurement is taking too long... aborting.
+
+qsub: job 1973938.cyclades-master.stanford.edu completed

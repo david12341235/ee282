@@ -1,0 +1,38 @@
+# builtin_prefetch +1 with rw flag, blocking w block size 8
+qsub: waiting for job 1974446.cyclades-master.stanford.edu to start
+qsub: job 1974446.cyclades-master.stanford.edu ready
+
+
+Each measurement is average per iteration. Runtime is given in milliseconds.
+MFLOPS is estimated assuming a naive matmul().
+
+ 0x80000032 = PAPI_TOT_INS      Instr completed
+ 0x8000003b = PAPI_TOT_CYC      Total cycles
+ 0x80000000 = PAPI_L1_DCM       L1D cache misses
+ 0x80000007 = PAPI_L2_TCM       L2 cache misses
+
+Dim.   MFLOPS     Runtime      0x80000032   0x8000003b   0x80000000   0x80000007
+
+   2  343.747      0.0000             256          108            0            0
+
+   4  642.165      0.0002            1036          463            0            0
+
+   8  674.285      0.0015            6580         3529            0            0
+
+  16  679.326      0.0121           52159        28086            0            0
+
+  32  682.122      0.0961          416473       223161           35            0
+
+  64  658.988      0.7956         3329893      1847228         5503            0
+
+ 128  403.593     10.3924        26633251     24169155        43932           67
+
+ 256  303.916    110.4069       213044810    256797015       604724         5027
+
+ 512  210.360   1276.0790      1704277680   2961691715    132517239      1242349
+
+1024  204.978  10476.6550     13633901735  24328356974   1045519404     22418841
+
+2048  --- Measurement is taking too long... aborting.
+
+qsub: job 1974446.cyclades-master.stanford.edu completed
