@@ -1,0 +1,27 @@
+# prefetching +1, blocking sz = 8, added SSE2 operations
+qsub: waiting for job 1985709.cyclades-master.stanford.edu to start
+qsub: job 1985709.cyclades-master.stanford.edu ready
+
+
+Each measurement is average per iteration. Runtime is given in milliseconds.
+MFLOPS is estimated assuming a naive matmul().
+
+ 0x80000032 = PAPI_TOT_INS      Instr completed
+ 0x8000003b = PAPI_TOT_CYC      Total cycles
+ 0x80000000 = PAPI_L1_DCM       L1D cache misses
+ 0x80000007 = PAPI_L2_TCM       L2 cache misses
+
+Dim.   MFLOPS     Runtime      0x80000032   0x8000003b   0x80000000   0x80000007
+   2  548.244      0.0000             156           68            0            0
+   4 2547.245      0.0001             287          117            0            0
+   8 5041.984      0.0002            1125          472            0            0
+  16 5452.667      0.0015            7121         3490            0            0
+  32 5008.601      0.0131           56372        30387            0            0
+  64 5167.810      0.1015          450020       236706          666            0
+ 128 3145.531      1.3334         3597933      3088933        12691            0
+ 256 2415.767     13.8898        28776484     32318278       172202           30
+ 512 1752.734    153.1524       230186573    355764425     14827782        17108
+1024 1726.165   1244.0780      1841395226   2881883973    122241278      2318207
+2048 1560.574  11008.6880     14730777418  25600163750    930134374    126482707
+
+qsub: job 1985709.cyclades-master.stanford.edu completed
