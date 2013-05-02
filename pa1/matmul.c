@@ -46,8 +46,8 @@ printf("2:%.2f*%.2f +", *((double*)mA+i*n+k), *((double*)&b2));
 printf("%.2f*%.2f \n", *(((double*)mA+i*n+k)+1), *(((double*)&b2)+1));
 }
       }
-      C[i*N + 2*j] = *((double*)&t1) + *(((double*)&t1)+1);
-      C[i*N + 2*j + 1] = *((double*)&t2) + *(((double*)&t2)+1);
+      C[i*N + 2*j] += *((double*)&t1) + *(((double*)&t1)+1);
+      C[i*N + 2*j + 1] += *((double*)&t2) + *(((double*)&t2)+1);
     }
 if (N == 2) {
 printf("A=[%f,%f;%f,%f]\n",
