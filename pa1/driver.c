@@ -136,16 +136,6 @@ void check_correct () {
 
     if ((err = error(C, cC, matdim, matdim)) > MAX_ERROR) {
       printf("FAILED  Calculated error %f > %f\n", err, MAX_ERROR);
-if (matdim == 2)
-printf("\ncorrect:%f,%f;%f,%f;\n",
-cC[0],cC[1],cC[2],cC[3]);
-
-//if (matdim == 4) {
-//      printf("%f,%f,%f,%f;%f,%f,%f,%f;%f,%f,%f,%f;%f,%f,%f,%f;\n",
-//cC[0],cC[1],cC[2],cC[3],cC[4],cC[5],cC[6],cC[7],cC[8],cC[9],cC[10],cC[11],cC[12],cC[13],cC[14],cC[15]);
-//printf("%f,%f,%f,%f;%f,%f,%f,%f;%f,%f,%f,%f;%f,%f,%f,%f;\n",
-//C[0],C[1],C[2],C[3],C[4],C[5],C[6],C[7],C[8],C[9],C[10],C[11],C[12],C[13],C[14],C[15]);
-//}
     } else {
       printf("PASSED\n");
     }
