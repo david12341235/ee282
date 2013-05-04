@@ -21,6 +21,10 @@ void matmul(int N, const double* A, const double* Bp, double* C) {
   __m128d* mC = (__m128d*) C;
 
   int n = N / 2;
+  union pd_d {
+    __m128d pd;
+    double d[2];
+  } r1, r2;
 
 if (N > 32) {
   double *B = malloc(N*N*sizeof(double));
@@ -29,36 +33,38 @@ if (N > 32) {
     for (j = 0; j < N; j++)
       B[i*N+j] = Bp[j*N+i];
 
+
   for (ii = 0; ii < N; ii += BS)
   for (jj = 0; jj < N; jj += BS)
-  for (kk = 0; kk < N; kk += BS/2)
+//  for (kk = 0; kk < N; kk += BS/2)
   for (i = ii; i < min(ii+BS,N); ++i)
     for (j = jj; j < min(jj+BS,N); ++j) {
-      __m128d t1 = _mm_set_pd(0.0, 0.0);
-      for (k = kk; k < min(kk+BS/2,n); ++k) {
-        __builtin_prefetch(mA+i*n+k+7,0);
-        __builtin_prefetch(mB+j*n+k+7,0);
+     r1.pd = _mm_set_pd(0.0, 0.0);
+      for (k = 0; k < n; ++k) {
+//      for (k = kk; k < min(kk+BS/2,n); ++k) {
+//        __builtin_prefetch(mA+i*n+k+7,0);
+//        __builtin_prefetch(mB+j*n+k+7,0);
 
-        t1 = _mm_add_pd( t1, _mm_mul_pd(mA[i*n+k],mB[j*n+k]));
+        r1.pd = _mm_add_pd( r1.pd, _mm_mul_pd(mA[i*n+k],mB[j*n+k]));
       }
-      C[i*N + j] += *((double*)&t1) + *(((double*)&t1)+1);
+      C[i*N + j] += r1.d[0] + r1.d[1];
     }
 
 } else {
   __m128d* mB = (__m128d*) Bp;
   for (i = 0; i < N; ++i)
     for (j = 0; j < n; ++j) {
-      __m128d t1 = _mm_set_pd(0.0, 0.0);
-      __m128d t2 = _mm_set_pd(0.0, 0.0);
+      r1.pd = _mm_set_pd(0.0, 0.0);
+      r2.pd = _mm_set_pd(0.0, 0.0);
       for (k = 0; k < n; ++k) {
         __m128d b1 = _mm_shuffle_pd(mB[2*k*n+j], mB[(2*k+1)*n+j], 0x4);
         __m128d b2 = _mm_shuffle_pd(mB[2*k*n+j], mB[(2*k+1)*n+j], 0x3);
 
-        t1 = _mm_add_pd( t1, _mm_mul_pd(mA[i*n+k],b1));
-        t2 = _mm_add_pd( t2, _mm_mul_pd(mA[i*n+k],b2));
+        r1.pd = _mm_add_pd( r1.pd, _mm_mul_pd(mA[i*n+k],b1));
+        r2.pd = _mm_add_pd( r2.pd, _mm_mul_pd(mA[i*n+k],b2));
       }
-      C[i*N + 2*j] += *((double*)&t1) + *(((double*)&t1)+1);
-      C[i*N + 2*j + 1] += *((double*)&t2) + *(((double*)&t2)+1);
+      C[i*N + 2*j] += r1.d[0] + r1.d[1];
+      C[i*N + 2*j + 1] += r2.d[0] + r2.d[1];
     }
 }
 }
