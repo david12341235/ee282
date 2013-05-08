@@ -1,0 +1,206 @@
+#include <pmmintrin.h>
+#include <stdio.h>
+
+// This is the matrix multiply kernel you are to replace.
+// Note that you are to implement C = C + AB, not C = AB!
+
+ #define min(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a < _b ? _a : _b; })
+
+void addM(int N, const double* A, const double* B, double *C, int incA, int incB, int incC);
+void addMTo(int N, const double* A, double *C, int incA, int incC);
+void subM(int N, const double* A, const double* B, double *C, int incA, int incB, int incC);
+void mulM(int N, const double* A, const double* B, double *C, int incA, int incB, int incC);
+
+void matmul(int N, const double*__restrict__ A, const double*__restrict__ Bp, double*__restrict__ C) {
+
+  // cast to sse2 FP 
+  __m128d* mA = (__m128d*) A;
+  __m128d* mC = (__m128d*) C;
+
+  // use straightforward multiply for 2x2 case
+  if (N == 2) {
+    __m128d b1 = _mm_load_pd(Bp);
+    __m128d b2 = _mm_load_pd(Bp+2);
+    mC[0] += _mm_add_pd(_mm_mul_pd(_mm_set1_pd(A[0]), b1), _mm_mul_pd(_mm_set1_pd(A[1]), b2));
+    mC[1] += _mm_add_pd(_mm_mul_pd(_mm_set1_pd(A[2]), b1), _mm_mul_pd(_mm_set1_pd(A[3]), b2));
+    return;
+  }
+
+  // allows us to access packed sse2 DFP values individually 
+  union pd_d {
+    __m128d pd;
+    double d[2];
+  } r1, r2, b1, b2, a;
+
+
+  int i, j, k, ii, jj, kk, iii, jjj, kkk;
+  int BSI = 256;
+  int BSI2 = 2048;
+  int BSJ = (N == 64) ? 64 : 256;
+  int BSJ2 = 2048;
+  int BSK = 16;
+  int BSK2 = 2048;
+
+
+  int n = N / 2;
+
+if (N < 1024) {
+//  double *B = malloc(N*N*sizeof(double));
+  __m128d* mB = (__m128d*) Bp;
+
+//  for (iii = 0; iii < N; iii += BSI2)
+//  for (jjj = 0; jjj < n; jjj += BSJ2/2)
+//  for (kkk = 0; kkk < n; kkk += BSK2/2)
+//  for (ii = iii; ii < min(iii+BSI2,N); ii += BSI)
+//  for (jj = jjj; jj < min(jjj+BSJ2/2,n); jj += BSJ/2)
+//  for (kk = kkk; kk < min(kkk+BSK2/2,n); kk += BSK/2)
+  for (ii = 0; ii < N; ii += BSI)
+  for (jj = 0; jj < n; jj += BSJ/2)
+  for (kk = 0; kk < n; kk += BSK/2)
+//  for (kk = 0; kk < n; kk += BS/2)
+  for (i = ii; i < min(ii+BSI,N); ++i) {
+    __m128d *__restrict__ c = mC + n*i;
+    for (k = kk; k < min(kk+BSK/2,n); ++k) {
+//    for (k = 0; k < n; ++k) {
+      a.pd = mA[n*i + k];
+      b1.pd = _mm_set1_pd(a.d[0]);
+      b2.pd = _mm_set1_pd(a.d[1]);
+      // sse2 register to accumulate 2 additions at a time,
+      // for every 2*kth and 2*k+1th array element (= kth element
+      // of __m128d* array)
+      __m128d *__restrict__ mb1 = mB + n*2*k;
+      __m128d *__restrict__ mb2 = mB + n*(2*k+1);
+      for (j = jj; j < min(jj+BSJ/2,n); ++j) {
+          c[j] = _mm_add_pd( _mm_add_pd(c[j], _mm_mul_pd(b1.pd,mb1[j])),  _mm_mul_pd(b2.pd,mb2[j]));
+      }
+    }
+  }  
+
+} else {
+    double *R = malloc(N*N*sizeof(double));
+    double *M1 = malloc(n*n*sizeof(double));
+    double *M2 = malloc(n*n*sizeof(double));
+    double *M3 = malloc(n*n*sizeof(double));
+    double *M4 = malloc(n*n*sizeof(double));
+    double *M5 = malloc(n*n*sizeof(double));
+    double *M6 = malloc(n*n*sizeof(double));
+    double *M7 = malloc(n*n*sizeof(double));
+    double *tmp1 = malloc(n*n*sizeof(double));
+    double *tmp2 = malloc(n*n*sizeof(double));
+    
+    const double *A12 = A + n, *A21 = A+N*n, *A22 = A + (N+1)*n;
+    const double *B12 = Bp + n, *B21 = Bp+N*n, *B22 = Bp + (N+1)*n;
+    double *R12 = R + n, *R21 = R+N*n, *R22 = R + (N+1)*n;
+
+    addM(n, A, A22, tmp1, N, N, n);
+    addM(n, Bp, B22, tmp2, N, N, n);
+    mulM(n, tmp1, tmp2, M1, n, n, n);
+    addM(n, A21, A22, tmp1, N, N, n);
+    mulM(n, tmp1, Bp, M2, n, N, n);
+    subM(n, B12, B22, tmp1, N, N, n);
+    mulM(n, A, tmp1, M3, N, n, n);
+    subM(n, B21, Bp, tmp1, N, N, n);
+    mulM(n, A22, tmp1, M4, N, n, n);
+    addM(n, A, A12, tmp1, N, N, n);
+    mulM(n, tmp1, B22, M5, n, N, n);
+    subM(n, A21, A, tmp1, N, N, n);
+    addM(n, Bp, B12, tmp2, N, N, n);
+    mulM(n, tmp1, tmp2, M6, n, n, n);
+    subM(n, A12, A22, tmp1, N, N, n);
+    addM(n, B21, B22, tmp2, N, N, n);
+    mulM(n, tmp1, tmp2, M7, n, n, n);
+
+    addM(n, M1, M4, tmp1, n, n, n);
+    subM(n, tmp1, M5, tmp2, n, n, n);
+    addM(n, tmp2, M7, R, n, n, N);
+    addM(n, M3, M5, R12, n, n, N);
+    addM(n, M2, M4, R21, n, n, N);
+    subM(n, M1, M2, tmp1, n, n, n);
+    addM(n, M3, M6, tmp2, n, n, n);
+    addM(n, tmp1, tmp2, R22, n, n, N);
+    addMTo(N, R, C, N, N);
+}
+}
+
+void addM(int N, const double*__restrict__ A, const double*__restrict__ B, double *__restrict__ C, int incA, int incB, int incC) {
+    int i, j;
+    int n = N/2;
+    int inA = incA/2;
+    int inB = incB/2;
+    int inC = incC/2;
+    __m128d* a = (__m128d*) A;
+    __m128d* b = (__m128d*) B;    
+    __m128d* c = (__m128d*) C;
+    for (i = 0; i < N; i++)
+        for (j = 0; j < n; j++)
+            c[i*inC + j] = _mm_add_pd(a[i*inA + j], b[i*inB + j]);
+}
+
+void addMTo(int N, const double*__restrict__ A, double *__restrict__ C, int incA, int incC) {
+    int i, j;
+    int n = N/2;
+    int inA = incA/2;
+    int inC = incC/2;
+    __m128d* a = (__m128d*) A;
+    __m128d* c = (__m128d*) C;
+    for (i = 0; i < N; i++)
+        for (j = 0; j < n; j++)
+            c[i*inC + j] += a[i*inA + j];
+}
+
+void subM(int N, const double*__restrict__ A, const double*__restrict__ B, double *__restrict__ C, int incA, int incB, int incC) {
+    int i, j;
+    int n = N/2;
+    int inA = incA/2;
+    int inB = incB/2;
+    int inC = incC/2;
+    __m128d* a = (__m128d*) A;
+    __m128d* b = (__m128d*) B;    
+    __m128d* c = (__m128d*) C;
+    for (i = 0; i < N; i++)
+        for (j = 0; j < n; j++)
+            c[i*inC + j] = _mm_sub_pd(a[i*inA + j], b[i*inB + j]);
+}
+
+void mulM (int N, const double*__restrict__ A, const double*__restrict__ Bp, double*__restrict__ C, int incA, int incB, int incC) {
+  int i, j, k, ii, jj, kk, iii, jjj, kkk;
+  int n = N/2;
+    int inA = incA/2;
+    int inC = incC/2;
+  __m128d* mA = (__m128d*) A;
+  __m128d* mC = (__m128d*) C;
+
+  union pd_d {
+    __m128d pd;
+    double d[2];
+  } r1;
+  double *B = malloc(N*N*sizeof(double));
+  __m128d* mB = (__m128d*) B;
+  // transpose array to line up memory access
+  for (i = 0; i < N; i++)
+    for (j = 0; j < N; j++)
+      B[i*N+j] = Bp[j*incB+i];
+
+  int inB = N/2;
+
+//  for (jj = 0; jj < N; jj += BSJ)
+  for (i = 0; i < N; ++i)
+    for (j = 0; j < N; ++j) {
+//    for (j = jj; j < min(jj+BS,N); ++j) {
+      // sse2 register to accumulate 2 additions at a time,
+      // for every 2*kth and 2*k+1th array element (= kth element
+      // of __m128d* array)
+      r1.pd = _mm_set_pd(0.0, 0.0);
+      for (k = 0; k < n; ++k) {
+          // multiply elements from mA and mB and add to cumulative total
+          r1.pd = _mm_add_pd( r1.pd, _mm_mul_pd(mA[i*inA+k],mB[j*inB+k]));
+      }
+      C[i*incC + j] = r1.d[0] + r1.d[1];
+    }
+
+}
+
+

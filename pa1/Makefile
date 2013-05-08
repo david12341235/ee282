@@ -1,7 +1,7 @@
 ## Provide your own options or compiler here.
 CC = gcc
 #CC = icc
-CFLAGS += -O3 -g -Wl,-no-as-needed -march=corei7 -funroll-loops -std=gnu99
+CFLAGS += -O3 -g -Wl,-no-as-needed -march=corei7 -funroll-loops # -fprefetch-loop-arrays
 
 ## You shouldn't need to edit anything past this point.
 
@@ -31,3 +31,4 @@ clean:
 # Some generate dependencies.
 %.o: %.c utils.h Makefile
 	$(COMPILE.c) $(OUTPUT_OPTION) $<
+
