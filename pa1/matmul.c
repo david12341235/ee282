@@ -10,12 +10,17 @@
      _a < _b ? _a : _b; })
 
 void matmul(int N, const double* A, const double* Bp, double* C) {
+
+  // cast to sse2 FP 
+  __m128d* mA = (__m128d*) A;
+  __m128d* mC = (__m128d*) C;
+
   // use straightforward multiply for 2x2 case
   if (N == 2) {
-    C[0] += A[0]*Bp[0] + A[1]*Bp[2];
-    C[1] += A[0]*Bp[1] + A[1]*Bp[3];
-    C[2] += A[2]*Bp[0] + A[3]*Bp[2];
-    C[3] += A[2]*Bp[1] + A[3]*Bp[3];
+    __m128d b1 = _mm_load_pd(Bp);
+    __m128d b2 = _mm_load_pd(Bp+2);
+    mC[0] += _mm_add_pd(_mm_mul_pd(_mm_set1_pd(A[0]), b1), _mm_mul_pd(_mm_set1_pd(A[1]), b2));
+    mC[1] += _mm_add_pd(_mm_mul_pd(_mm_set1_pd(A[2]), b1), _mm_mul_pd(_mm_set1_pd(A[3]), b2));
     return;
   }
 
@@ -25,27 +30,36 @@ void matmul(int N, const double* A, const double* Bp, double* C) {
     double d[2];
   } r1, r2, b1, b2, a;
 
-  // cast to sse2 FP 
-  __m128d* mA = (__m128d*) A;
-  __m128d* mC = (__m128d*) C;
-
 
   int i, j, k, ii, jj, kk, iii, jjj, kkk;
-  int BS = 64;
-  int BS2 = 2048;
+  int BSI = 256;
+  int BSI2 = 2048;
+  int BSJ = (N == 64) ? 64 : 256;
+  int BSJ2 = 2048;
+  int BSK = 16;
+  int BSK2 = 2048;
 
 
   int n = N / 2;
 
-if (N < 512) {
+//if (N < 3000) {
 //  double *B = malloc(N*N*sizeof(double));
   __m128d* mB = (__m128d*) Bp;
 
-  for (jjj = 0; jjj < n; jjj += BS2/2)
-  for (jj = jjj; jj < min(jjj+BS2/2,N); jj += BS/2)
-  for (i = 0; i < N; ++i) {
+//  for (iii = 0; iii < N; iii += BSI2)
+//  for (jjj = 0; jjj < n; jjj += BSJ2/2)
+//  for (kkk = 0; kkk < n; kkk += BSK2/2)
+//  for (ii = iii; ii < min(iii+BSI2,N); ii += BSI)
+//  for (jj = jjj; jj < min(jjj+BSJ2/2,n); jj += BSJ/2)
+//  for (kk = kkk; kk < min(kkk+BSK2/2,n); kk += BSK/2)
+  for (ii = 0; ii < N; ii += BSI)
+  for (jj = 0; jj < n; jj += BSJ/2)
+  for (kk = 0; kk < n; kk += BSK/2)
+//  for (kk = 0; kk < n; kk += BS/2)
+  for (i = ii; i < min(ii+BSI,N); ++i) {
     __m128d *__restrict__ c = mC + n*i;
-    for (k = 0; k < n; ++k) {
+    for (k = kk; k < min(kk+BSK/2,n); ++k) {
+//    for (k = 0; k < n; ++k) {
       a.pd = mA[n*i + k];
       b1.pd = _mm_set1_pd(a.d[0]);
       b2.pd = _mm_set1_pd(a.d[1]);
@@ -54,13 +68,13 @@ if (N < 512) {
       // of __m128d* array)
       __m128d *__restrict__ mb1 = mB + n*2*k;
       __m128d *__restrict__ mb2 = mB + n*(2*k+1);
-      for (j = jj; j < min(jj+BS/2,n); ++j) {
+      for (j = jj; j < min(jj+BSJ/2,n); ++j) {
           c[j] = _mm_add_pd( _mm_add_pd(c[j], _mm_mul_pd(b1.pd,mb1[j])),  _mm_mul_pd(b2.pd,mb2[j]));
       }
     }
   }  
 
-} else {
+/*} else {
   double *B = malloc(N*N*sizeof(double));
   __m128d* mB = (__m128d*) B;
   // transpose array to line up memory access
@@ -84,6 +98,6 @@ if (N < 512) {
       C[i*N + j] += r1.d[0] + r1.d[1];
     }
 
-}
+}*/
 }
 

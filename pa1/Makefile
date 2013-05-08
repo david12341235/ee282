@@ -1,7 +1,7 @@
 ## Provide your own options or compiler here.
 CC = gcc
 #CC = icc
-CFLAGS += -O3 -g -Wl,-no-as-needed -march=corei7 -funroll-loops
+CFLAGS += -O3 -g -Wl,-no-as-needed -march=corei7 -funroll-loops -std=gnu99
 
 ## You shouldn't need to edit anything past this point.
 
